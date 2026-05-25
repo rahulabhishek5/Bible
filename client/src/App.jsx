@@ -299,27 +299,27 @@ export default function App() {
       {/* MAIN VIEWPORT INTERFACE AREA */}
       <main className="flex-1 flex flex-col h-full overflow-hidden bg-cream">
         {/* UPPER CONSOLE BAR */}
-        <header className="flex flex-col sm:flex-row items-center justify-between gap-4 w-full p-4 md:px-8 shrink-0 bg-surface-white border-b-4 border-primary z-10">
-          <div className="flex items-center gap-4 md:gap-6 w-full sm:w-auto justify-between sm:justify-start">
-            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2.5 border-2 border-primary bg-surface-white transition-all duration-100 ease-out active:scale-[0.98] active:translate-y-[0.5px] md:hidden text-primary min-h-[44px] min-w-[44px]">
-              <Menu className="h-6 w-6" />
+        <header className="flex flex-row flex-wrap sm:flex-nowrap items-center justify-between gap-2 md:gap-4 w-full p-2 md:p-4 md:px-8 shrink-0 bg-surface-white border-b-2 md:border-b-4 border-primary z-10">
+          <div className="flex items-center gap-2 md:gap-6 w-full sm:w-auto justify-between sm:justify-start">
+            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 border-2 border-primary bg-surface-white transition-all duration-100 ease-out active:scale-[0.98] active:translate-y-[0.5px] md:hidden text-primary min-h-[40px] min-w-[40px] flex items-center justify-center">
+              <Menu className="h-5 w-5" />
             </button>
-            <div className="flex bg-cream p-1.5 border-2 border-primary w-full sm:w-auto justify-center">
-              <button onClick={() => setActiveTab('reader')} className={`flex-1 sm:flex-none min-h-[44px] min-w-[44px] px-4 py-2.5 md:px-6 text-sm font-bold uppercase tracking-wider transition-all duration-100 ease-out active:scale-[0.98] active:translate-y-[0.5px] border-2 border-transparent flex items-center justify-center gap-2 ${activeTab === 'reader' ? 'bg-primary text-surface-white' : 'text-primary md:hover:bg-surface-white md:hover:border-primary'}`}>
-                <BookOpen className="h-4 w-4" /> Reader
+            <div className="flex bg-cream p-1 border-2 border-primary w-full sm:w-auto justify-center">
+              <button onClick={() => setActiveTab('reader')} className={`flex-1 sm:flex-none min-h-[40px] min-w-[40px] px-2 py-1.5 md:px-6 text-xs md:text-sm font-bold uppercase tracking-wider transition-all duration-100 ease-out active:scale-[0.98] active:translate-y-[0.5px] border-2 border-transparent flex items-center justify-center gap-1.5 ${activeTab === 'reader' ? 'bg-primary text-surface-white' : 'text-primary md:hover:bg-surface-white md:hover:border-primary'}`}>
+                <BookOpen className="h-3.5 w-3.5 md:h-4 md:w-4" /> Reader
               </button>
-              <button onClick={() => setActiveTab('search')} className={`flex-1 sm:flex-none min-h-[44px] min-w-[44px] px-4 py-2.5 md:px-6 text-sm font-bold uppercase tracking-wider transition-all duration-100 ease-out active:scale-[0.98] active:translate-y-[0.5px] border-2 border-transparent flex items-center justify-center gap-2 ${activeTab === 'search' ? 'bg-primary text-surface-white' : 'text-primary md:hover:bg-surface-white md:hover:border-primary'}`}>
-                <Search className="h-4 w-4" /> Search
+              <button onClick={() => setActiveTab('search')} className={`flex-1 sm:flex-none min-h-[40px] min-w-[40px] px-2 py-1.5 md:px-6 text-xs md:text-sm font-bold uppercase tracking-wider transition-all duration-100 ease-out active:scale-[0.98] active:translate-y-[0.5px] border-2 border-transparent flex items-center justify-center gap-1.5 ${activeTab === 'search' ? 'bg-primary text-surface-white' : 'text-primary md:hover:bg-surface-white md:hover:border-primary'}`}>
+                <Search className="h-3.5 w-3.5 md:h-4 md:w-4" /> Search
               </button>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 md:gap-4 justify-between w-full sm:w-auto">
+          <div className="flex items-center gap-2 justify-between w-full sm:w-auto mt-1 sm:mt-0">
              {activeTab === 'reader' && selectedBook && (
                 <div className="relative flex-1 sm:flex-none">
                   <button 
                     onClick={() => setIsViewModeDropdownOpen(!isViewModeDropdownOpen)}
-                    className="flex w-full sm:w-56 items-center justify-between gap-2 md:gap-3 bg-surface-white border-2 border-primary px-4 py-3 transition-all duration-300 ease-out active:scale-[0.98] md:hover:shadow-[4px_4px_0px_0px_#1A1A1A] md:hover:-translate-y-1 md:hover:-translate-x-1 cursor-pointer min-h-[56px]"
+                    className="flex w-full sm:w-56 items-center justify-between gap-1.5 md:gap-3 bg-surface-white border-2 border-primary px-2 py-1.5 md:px-4 md:py-3 transition-all duration-300 ease-out active:scale-[0.98] md:hover:shadow-[4px_4px_0px_0px_#1A1A1A] md:hover:-translate-y-1 md:hover:-translate-x-1 cursor-pointer min-h-[40px]"
                   >
                     <div className="flex items-center gap-2">
                        <Globe className="h-5 w-5 text-primary hidden sm:block" />
@@ -346,27 +346,27 @@ export default function App() {
               
               <button 
                 onClick={() => setIsSettingsOpen(true)} 
-                className="p-2.5 bg-surface-white border-2 border-primary text-primary transition-all duration-100 ease-out active:scale-[0.98] active:translate-y-[0.5px] md:hover:shadow-[4px_4px_0px_0px_#1A1A1A] md:hover:-translate-y-1 md:hover:-translate-x-1 min-h-[44px] min-w-[44px]"
+                className="p-2 bg-surface-white border-2 border-primary text-primary transition-all duration-100 ease-out active:scale-[0.98] active:translate-y-[0.5px] md:hover:shadow-[4px_4px_0px_0px_#1A1A1A] md:hover:-translate-y-1 md:hover:-translate-x-1 min-h-[40px] min-w-[40px] flex items-center justify-center"
               >
-                <Settings className="w-5 h-5"/>
+                <Settings className="w-4 h-4 md:w-5 md:h-5"/>
               </button>
           </div>
         </header>
 
         {/* CONTAINER DISPLAY WINDOW */}
-        <div className="flex-1 p-4 md:p-8 overflow-hidden flex flex-col">
+        <div className="flex-1 p-2 md:p-8 overflow-hidden flex flex-col">
           {activeTab === 'reader' ? (
-            <div className="max-w-5xl w-full mx-auto bg-surface-white border-4 border-primary shadow-[8px_8px_0px_0px_#1A1A1A] min-h-0 flex flex-col h-full overflow-hidden">
+            <div className="max-w-5xl w-full mx-auto bg-surface-white border-2 md:border-4 border-primary shadow-[4px_4px_0px_0px_#1A1A1A] md:shadow-[8px_8px_0px_0px_#1A1A1A] min-h-0 flex flex-col h-full overflow-hidden">
               {selectedBook ? (
                 <>
                   {/* STATIC CONTROL HEADER */}
-                  <div className="p-6 md:p-8 border-b-4 border-primary bg-cream text-center shrink-0">
-                    <h2 className="text-3xl md:text-5xl font-extrabold text-primary tracking-tighter uppercase">{selectedBook.name}</h2>
-                    <p className="text-primary font-bold mt-2 text-lg tracking-widest uppercase">Chapter {selectedChapter}</p>
+                  <div className="p-3 md:p-8 border-b-2 md:border-b-4 border-primary bg-cream text-center shrink-0">
+                    <h2 className="text-xl md:text-5xl font-extrabold text-primary tracking-tighter uppercase">{selectedBook.name}</h2>
+                    <p className="text-primary font-bold mt-0.5 md:mt-2 text-xs md:text-lg tracking-widest uppercase">Chapter {selectedChapter}</p>
                   </div>
 
                   {/* SCROLLABLE TEXT WRAPPER */}
-                  <div className="p-4 md:p-10 flex-1 overflow-y-auto space-y-6 bg-surface-white">
+                  <div className="p-3 md:p-10 flex-1 overflow-y-auto space-y-4 md:space-y-6 bg-surface-white">
                     {loading ? (
                       <div className="flex flex-col items-center justify-center py-20 gap-4">
                         <div className="animate-spin rounded-none h-10 w-10 border-4 border-primary border-t-accent-red" />
