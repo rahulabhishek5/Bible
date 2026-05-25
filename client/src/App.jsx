@@ -49,6 +49,15 @@ export default function App() {
   // Ergonomics & Thematic Settings State
   const [settings, setSettings] = useState(getInitialSettings);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isQuickNavOpen, setIsQuickNavOpen] = useState(false);
+
+  const scrollToVerse = (verseNum) => {
+    setIsQuickNavOpen(false);
+    const el = document.getElementById(`verse-${verseNum}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
   
   // Content Display States
   const [chapterVerses, setChapterVerses] = useState([]);
@@ -359,10 +368,35 @@ export default function App() {
             <div className="max-w-5xl w-full mx-auto bg-surface-white border-2 md:border-4 border-primary shadow-[4px_4px_0px_0px_#1A1A1A] md:shadow-[8px_8px_0px_0px_#1A1A1A] min-h-0 flex flex-col h-full overflow-hidden">
               {selectedBook ? (
                 <>
-                  {/* STATIC CONTROL HEADER */}
-                  <div className="p-3 md:p-8 border-b-2 md:border-b-4 border-primary bg-cream text-center shrink-0">
-                    <h2 className="text-xl md:text-5xl font-extrabold text-primary tracking-tighter uppercase">{selectedBook.name}</h2>
-                    <p className="text-primary font-bold mt-0.5 md:mt-2 text-xs md:text-lg tracking-widest uppercase">Chapter {selectedChapter}</p>
+                  {/* INTERACTIVE CONTROL HEADER / QUICK-NAV TRIGGER */}
+                  <div className="border-b-2 md:border-b-4 border-primary shrink-0 flex flex-col relative z-20 bg-cream">
+                    <button 
+                      onClick={() => setIsQuickNavOpen(!isQuickNavOpen)}
+                      className="p-3 md:p-8 text-center w-full transition-all md:hover:bg-primary md:hover:text-surface-white group cursor-pointer focus:outline-none"
+                    >
+                      <div className="flex items-center justify-center gap-2">
+                        <h2 className="text-xl md:text-5xl font-extrabold text-primary group-hover:text-surface-white tracking-tighter uppercase transition-colors">{selectedBook.name}</h2>
+                        <ChevronDown className={`w-5 h-5 md:w-8 md:h-8 text-primary group-hover:text-surface-white transition-transform duration-300 ${isQuickNavOpen ? 'rotate-180' : ''}`} />
+                      </div>
+                      <p className="text-primary group-hover:text-surface-white/80 font-bold mt-0.5 md:mt-2 text-xs md:text-lg tracking-widest uppercase transition-colors">Chapter {selectedChapter} &nbsp;&bull;&nbsp; {chapterVerses.length} Verses</p>
+                    </button>
+                    
+                    {/* QUICK-NAV GRID OVERLAY */}
+                    <div className={`absolute top-full left-0 right-0 bg-surface-white border-primary shadow-[0_8px_0px_0px_#1A1A1A] overflow-hidden transition-all duration-300 origin-top z-30 ${isQuickNavOpen ? 'max-h-96 opacity-100 border-b-4 border-t-2' : 'max-h-0 opacity-0 border-b-0 border-t-0'}`}>
+                      <div className="p-4 md:p-6 overflow-y-auto max-h-96">
+                        <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2 md:gap-3">
+                          {chapterVerses.map(v => (
+                            <button
+                              key={v.verseNumber}
+                              onClick={() => scrollToVerse(v.verseNumber)}
+                              className="p-2 md:py-3 text-sm md:text-base font-bold bg-cream border-2 border-primary text-primary transition-all md:hover:bg-primary md:hover:text-surface-white active:scale-[0.98] active:translate-y-[0.5px] md:hover:-translate-y-1 md:hover:shadow-[2px_2px_0px_0px_#1A1A1A]"
+                            >
+                              {v.verseNumber}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
                   {/* SCROLLABLE TEXT WRAPPER */}
@@ -374,7 +408,7 @@ export default function App() {
                       </div>
                     ) : (
                       chapterVerses.map((v) => (
-                        <div key={v._id} className="flex items-start gap-4 p-4 border-2 border-primary bg-surface-white transition-all duration-100 ease-out md:hover:shadow-[6px_6px_0px_0px_#1A1A1A] md:hover:translate-x-[-2px] md:hover:translate-y-[-2px]">
+                        <div key={v._id} id={`verse-${v.verseNumber}`} className="flex items-start gap-4 p-4 border-2 border-primary bg-surface-white transition-all duration-100 ease-out md:hover:shadow-[6px_6px_0px_0px_#1A1A1A] md:hover:translate-x-[-2px] md:hover:translate-y-[-2px]">
                           <span className="text-sm font-bold text-surface-white bg-primary px-3 py-1.5 mt-1 shrink-0">{v.verseNumber}</span>
                           <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-8 transition-none">
                             {/* DYNAMIC LAYOUT CONTROL RENDERING */}
