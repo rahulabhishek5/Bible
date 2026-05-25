@@ -21,3 +21,11 @@
 body {
   @apply bg-cream text-primary antialiased font-space-grotesk;
 }
+
+@layer utilities {
+  .script-container-lock {
+    line-height: 1.75;
+    font-display: swap;
+    text-rendering: optimizeLegibility;
+  }
+}

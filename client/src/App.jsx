@@ -3,21 +3,17 @@ import { BookOpen, Search, Menu, ChevronRight, BookOpenCheck, Globe, HelpCircle,
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000/api/bible';
 
-const TELUGU_BOOK_NAMES = {
-  1: 'ఆదికాండము', 2: 'నిర్గమకాండము', 3: 'లేవీయకాండము', 4: 'సంఖ్యాకాండము', 5: 'ద్వితీయోపదేశకాండము',
-  6: 'యెహోషువ', 7: 'న్యాయాధిపతులు', 8: 'రూతు', 9: '1 సమూయేలు', 10: '2 సమూయేలు',
-  11: '1 రాజులు', 12: '2 రాజులు', 13: '1 దినవృత్తాంతములు', 14: '2 దినవృత్తాంతములు', 15: 'ఎజ్రా',
-  16: 'నెహెమ్యా', 17: 'ఎస్తేరు', 18: 'యోబు', 19: 'కీర్తనల గ్రంథము', 20: 'సామెతలు',
-  21: 'ప్రసంగి', 22: 'పరమగీతము', 23: 'యెషయా', 24: 'యిర్మీయా', 25: 'విలాపవాక్యములు',
-  26: 'యెహెజ్కేలు', 27: 'దానియేలు', 28: 'హోషేయ', 29: 'యోవేలు', 30: 'ఆమోసు',
-  31: 'ఓబద్యా', 32: 'యోనా', 33: 'మీకా', 34: 'నహూము', 35: 'హబక్కూకు',
-  36: 'జెఫన్యా', 37: 'హగ్గయి', 38: 'జెకర్యా', 39: 'మలాకీ', 40: 'మత్తయి సువార్త',
-  41: 'మార్కు సువార్త', 42: 'లూకా సువార్త', 43: 'యోహాను సువార్త', 44: 'అపొస్తలుల కార్యములు', 45: 'రోమీయులకు',
-  46: '1 కొరింథీయులకు', 47: '2 కొరింథీయులకు', 48: 'గలతీయులకు', 49: 'ఎఫెసీయులకు', 50: 'ఫిలిప్పీయులకు',
-  51: 'కొలొస్సయులకు', 52: '1 థెస్సలొనీకయులకు', 53: '2 థెస్సలొనీకయులకు', 54: '1 తిమోతికి', 55: '2 తిమోతికి',
-  56: 'తీతుకు', 57: 'ఫిలేమోనుకు', 58: 'హెబ్రీయులకు', 59: 'యాకోబు', 60: '1 పేతురు',
-  61: '2 పేతురు', 62: '1 యోహాను', 63: '2 యోహాను', 64: '3 యోహాను', 65: 'యూదా', 66: 'ప్రకటన గ్రంథము'
-};
+const ENGLISH_BOOK_NAMES = [
+  "Genesis", "Exodus", "Leviticus", "Numbers", "Deuteronomy", "Joshua", "Judges", "Ruth",
+  "1 Samuel", "2 Samuel", "1 Kings", "2 Kings", "1 Chronicles", "2 Chronicles", "Ezra",
+  "Nehemiah", "Esther", "Job", "Psalms", "Proverbs", "Ecclesiastes", "Song of Solomon",
+  "Isaiah", "Jeremiah", "Lamentations", "Ezekiel", "Daniel", "Hosea", "Joel", "Amos",
+  "Obadiah", "Jonah", "Micah", "Nahum", "Habakkuk", "Zephaniah", "Haggai", "Zechariah",
+  "Malachi", "Matthew", "Mark", "Luke", "John", "Acts", "Romans", "1 Corinthians",
+  "2 Corinthians", "Galatians", "Ephesians", "Philippians", "Colossians", "1 Thessalonians",
+  "2 Thessalonians", "1 Timothy", "2 Timothy", "Titus", "Philemon", "Hebrews", "James",
+  "1 Peter", "2 Peter", "1 John", "2 John", "3 John", "Jude", "Revelation"
+];
 
 // ============================================================================
 // DYNAMIC THEMING DEFINITIONS
@@ -50,6 +46,8 @@ export default function App() {
   const [settings, setSettings] = useState(getInitialSettings);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isQuickNavOpen, setIsQuickNavOpen] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState('TELUGU');
+  const [isLangDropdownOpen, setIsLangDropdownOpen] = useState(false);
 
   const scrollToVerse = (verseNum) => {
     setIsQuickNavOpen(false);
@@ -83,6 +81,17 @@ export default function App() {
   };
 
   // ============================================================================
+  // VIEW MODE STATE SYNCHRONIZATION
+  // ============================================================================
+  useEffect(() => {
+    if (viewMode === 'single_english') {
+      setSelectedLanguage('ENGLISH');
+    } else if (selectedLanguage === 'ENGLISH') {
+      setSelectedLanguage('TELUGU');
+    }
+  }, [viewMode, selectedLanguage]);
+
+  // ============================================================================
   // SYNCHRONOUS THEMATIC BINDING (PREVENTS FLASHING)
   // ============================================================================
   useLayoutEffect(() => {
@@ -97,18 +106,21 @@ export default function App() {
     localStorage.setItem('bible_settings', JSON.stringify(settings));
   }, [settings]);
 
-  // Phase 1: Load Cached Navigation Structure on Mount
+  // Phase 1: Load Cached Navigation Structure on Mount & Language Change
   useEffect(() => {
-    fetch(`${API_BASE}/navigation-menu`)
+    fetch(`${API_BASE}/navigation-menu?lang=${selectedLanguage}`)
       .then(res => res.json())
       .then(payload => {
         if (payload.status === 'success' && payload.data.length > 0) {
           setMenuData(payload.data);
-          setSelectedBook(payload.data[0]); // Default to first book (Genesis)
+          setSelectedBook(prev => {
+            if (!prev) return payload.data[0];
+            return payload.data.find(b => b.bookNumber === prev.bookNumber) || payload.data[0];
+          });
         }
       })
       .catch(err => console.error("Failed to load navigation cache:", err));
-  }, []);
+  }, [selectedLanguage]);
 
   // Phase 2: Fetch Chapter Contents Natively When Selection Changes
   useEffect(() => {
@@ -240,7 +252,7 @@ export default function App() {
       <aside className={`fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 w-80 h-full bg-cream border-r-4 border-primary flex flex-col overflow-hidden`}>
         <div className="p-5 border-b-4 border-primary flex items-center gap-3 bg-primary text-surface-white shrink-0">
           <BookOpenCheck className="h-7 w-7 shrink-0" />
-          <h1 className="font-bold text-xl tracking-wide whitespace-nowrap uppercase">Bilingual Scripture</h1>
+          <h1 className="font-bold text-xl tracking-wide whitespace-nowrap uppercase">Multi-Lingual Bible</h1>
         </div>
 
         {/* Binary Segmentation Toggle */}
@@ -273,10 +285,12 @@ export default function App() {
                   <div className="flex items-center gap-3 truncate">
                     <span className={`text-xs font-bold px-2 py-1.5 border-2 shrink-0 ${isSelected ? 'border-surface-white bg-primary text-surface-white' : 'border-primary bg-cream text-primary'}`}>{book.abbreviation}</span>
                     <div className="flex flex-col items-start truncate overflow-hidden">
-                      <span className="truncate font-extrabold uppercase tracking-widest">{book.name}</span>
-                      <span className={`truncate font-semibold text-[13px] tracking-wide mt-0.5 ${isSelected ? 'text-surface-white/80' : 'text-primary/70'}`}>
-                        {TELUGU_BOOK_NAMES[book.bookNumber]}
-                      </span>
+                      <span className={`truncate font-extrabold tracking-widest ${isSelected ? 'text-surface-white' : 'text-primary'}`}>{book.name}</span>
+                      {selectedLanguage !== 'ENGLISH' && (
+                        <span className={`truncate font-normal text-sm opacity-70 tracking-wide mt-0.5 ${isSelected ? 'text-surface-white/80' : 'text-primary/70'}`}>
+                          {ENGLISH_BOOK_NAMES[book.bookNumber - 1]}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <ChevronRight className={`h-5 w-5 transition-transform ${isSelected ? 'rotate-90' : ''}`} />
@@ -308,7 +322,7 @@ export default function App() {
       {/* MAIN VIEWPORT INTERFACE AREA */}
       <main className="flex-1 flex flex-col h-full overflow-hidden bg-cream">
         {/* UPPER CONSOLE BAR */}
-        <header className="flex flex-row flex-wrap sm:flex-nowrap items-center justify-between gap-2 md:gap-4 w-full p-2 md:p-4 md:px-8 shrink-0 bg-surface-white border-b-2 md:border-b-4 border-primary z-10">
+        <header className="flex flex-row flex-wrap sm:flex-nowrap items-center justify-between gap-2 md:gap-4 w-full p-2 md:p-4 md:px-8 shrink-0 bg-surface-white border-b-2 md:border-b-4 border-primary relative z-50">
           <div className="flex items-center gap-2 md:gap-6 w-full sm:w-auto justify-between sm:justify-start">
             <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 border-2 border-primary bg-surface-white transition-all duration-100 ease-out active:scale-[0.98] active:translate-y-[0.5px] md:hidden text-primary min-h-[40px] min-w-[40px] flex items-center justify-center">
               <Menu className="h-5 w-5" />
@@ -323,41 +337,72 @@ export default function App() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 justify-between w-full sm:w-auto mt-1 sm:mt-0">
-             {activeTab === 'reader' && selectedBook && (
-                <div className="relative flex-1 sm:flex-none">
-                  <button 
-                    onClick={() => setIsViewModeDropdownOpen(!isViewModeDropdownOpen)}
-                    className="flex w-full sm:w-56 items-center justify-between gap-1.5 md:gap-3 bg-surface-white border-2 border-primary px-2 py-1.5 md:px-4 md:py-3 transition-all duration-300 ease-out active:scale-[0.98] md:hover:shadow-[4px_4px_0px_0px_#1A1A1A] md:hover:-translate-y-1 md:hover:-translate-x-1 cursor-pointer min-h-[40px]"
-                  >
-                    <div className="flex items-center gap-2">
-                       <Globe className="h-5 w-5 text-primary hidden sm:block" />
-                       <span className="font-bold uppercase tracking-wider text-sm">
-                         {viewMode === 'parallel' ? 'Parallel View' : viewMode === 'single_kjv' ? 'KJV Only' : 'Telugu Only'}
-                       </span>
+            <div className="flex items-center gap-2 justify-between w-full sm:w-auto mt-1 sm:mt-0">
+               {activeTab === 'reader' && selectedBook && (
+                  <div className="relative flex-1 sm:flex-none">
+                    <button 
+                      onClick={() => setIsViewModeDropdownOpen(!isViewModeDropdownOpen)}
+                      className="flex w-full sm:w-56 items-center justify-between gap-1.5 md:gap-3 bg-surface-white border-2 border-primary px-2 py-1.5 md:px-4 md:py-3 transition-all duration-300 ease-out active:scale-[0.98] md:hover:shadow-[4px_4px_0px_0px_#1A1A1A] md:hover:-translate-y-1 md:hover:-translate-x-1 cursor-pointer min-h-[40px]"
+                    >
+                      <div className="flex items-center gap-2">
+                         <BookOpenCheck className="h-5 w-5 text-primary hidden sm:block" />
+                         <span className="font-bold uppercase tracking-wider text-sm">
+                           {viewMode === 'parallel' ? 'Parallel View' : viewMode === 'single_english' ? 'English Only' : 'Regional Only'}
+                         </span>
+                      </div>
+                      <ChevronDown className={`w-5 h-5 text-primary transition-transform duration-300 ${isViewModeDropdownOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    
+                    <div className={`absolute top-full left-0 right-0 mt-2 bg-surface-white border-2 border-primary shadow-[6px_6px_0px_0px_#1A1A1A] flex flex-col overflow-hidden transition-all duration-300 origin-top z-[99] ${isViewModeDropdownOpen ? 'scale-y-100 opacity-100 visible' : 'scale-y-0 opacity-0 invisible'}`}>
+                      {['parallel', 'single_english', 'single_regional'].map(mode => (
+                        <button 
+                          key={mode}
+                          onClick={() => { setViewMode(mode); setIsViewModeDropdownOpen(false); }}
+                          className={`px-4 py-4 text-left font-bold uppercase tracking-wider text-sm transition-colors md:hover:bg-cream ${viewMode === mode ? 'bg-primary text-surface-white md:hover:bg-primary' : 'text-primary'}`}
+                        >
+                          {mode === 'parallel' ? 'Parallel View' : mode === 'single_english' ? 'English Only' : 'Regional Only'}
+                        </button>
+                      ))}
                     </div>
-                    <ChevronDown className={`w-5 h-5 text-primary transition-transform duration-300 ${isViewModeDropdownOpen ? 'rotate-180' : ''}`} />
+                  </div>
+                )}
+                
+              {/* Global Language Selector Dropdown */}
+              {viewMode !== 'single_english' && (
+                <div className="relative">
+                  <button 
+                    onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)}
+                    className="p-2 px-3 md:px-4 bg-surface-white border-2 border-primary text-primary transition-all duration-100 ease-out active:scale-[0.98] active:translate-y-[0.5px] md:hover:shadow-[4px_4px_0px_0px_#1A1A1A] md:hover:-translate-y-1 md:hover:-translate-x-1 min-h-[40px] flex items-center justify-center gap-2 font-bold text-xs md:text-sm"
+                  >
+                    <Globe className="w-4 h-4 md:w-5 md:h-5"/>
+                    <span className="uppercase">{selectedLanguage}</span>
+                    <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isLangDropdownOpen ? 'rotate-180' : ''}`} />
                   </button>
                   
-                  <div className={`absolute top-full left-0 right-0 mt-2 bg-surface-white border-2 border-primary shadow-[6px_6px_0px_0px_#1A1A1A] flex flex-col overflow-hidden transition-all duration-300 origin-top z-50 ${isViewModeDropdownOpen ? 'scale-y-100 opacity-100 visible' : 'scale-y-0 opacity-0 invisible'}`}>
-                    {['parallel', 'single_kjv', 'single_telugu'].map(mode => (
-                      <button 
-                        key={mode}
-                        onClick={() => { setViewMode(mode); setIsViewModeDropdownOpen(false); }}
-                        className={`px-4 py-4 text-left font-bold uppercase tracking-wider text-sm transition-colors md:hover:bg-cream ${viewMode === mode ? 'bg-primary text-surface-white md:hover:bg-primary' : 'text-primary'}`}
+                  {isLangDropdownOpen && (
+                    <div className="absolute top-full mt-2 right-0 w-36 bg-surface-white border-2 border-primary shadow-[4px_4px_0px_0px_#1A1A1A] flex flex-col z-[99]">
+                      {['TELUGU', 'HINDI'].map(lang => (
+                      <button
+                        key={lang}
+                        onClick={() => {
+                          setSelectedLanguage(lang);
+                          setIsLangDropdownOpen(false);
+                        }}
+                        className={`text-left px-4 py-3 font-bold text-sm transition-colors border-b-2 border-primary last:border-b-0 ${selectedLanguage === lang ? 'bg-primary text-surface-white' : 'text-primary md:hover:bg-cream'}`}
                       >
-                        {mode === 'parallel' ? 'Parallel View' : mode === 'single_kjv' ? 'KJV Only' : 'Telugu Only'}
+                        {lang}
                       </button>
                     ))}
                   </div>
+                )}
                 </div>
               )}
-              
-              <button 
-                onClick={() => setIsSettingsOpen(true)} 
-                className="p-2 bg-surface-white border-2 border-primary text-primary transition-all duration-100 ease-out active:scale-[0.98] active:translate-y-[0.5px] md:hover:shadow-[4px_4px_0px_0px_#1A1A1A] md:hover:-translate-y-1 md:hover:-translate-x-1 min-h-[40px] min-w-[40px] flex items-center justify-center"
-              >
-                <Settings className="w-4 h-4 md:w-5 md:h-5"/>
+
+                <button 
+                  onClick={() => setIsSettingsOpen(true)} 
+                  className="p-2 bg-surface-white border-2 border-primary text-primary transition-all duration-100 ease-out active:scale-[0.98] active:translate-y-[0.5px] md:hover:shadow-[4px_4px_0px_0px_#1A1A1A] md:hover:-translate-y-1 md:hover:-translate-x-1 min-h-[40px] min-w-[40px] flex items-center justify-center"
+                >
+                  <Settings className="w-4 h-4 md:w-5 md:h-5"/>
               </button>
           </div>
         </header>
@@ -410,19 +455,19 @@ export default function App() {
                       chapterVerses.map((v) => (
                         <div key={v._id} id={`verse-${v.verseNumber}`} className="flex items-start gap-4 p-4 border-2 border-primary bg-surface-white transition-all duration-100 ease-out md:hover:shadow-[6px_6px_0px_0px_#1A1A1A] md:hover:translate-x-[-2px] md:hover:translate-y-[-2px]">
                           <span className="text-sm font-bold text-surface-white bg-primary px-3 py-1.5 mt-1 shrink-0">{v.verseNumber}</span>
-                          <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-8 transition-none">
+                          <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-8 transition-none script-container-lock">
                             {/* DYNAMIC LAYOUT CONTROL RENDERING */}
-                            {(viewMode === 'parallel' || viewMode === 'single_kjv') && (
+                            {(viewMode === 'parallel' || viewMode === 'single_english') && (
                               <div className={`transition-none ${viewMode === 'parallel' ? 'lg:col-span-1' : 'lg:col-span-2'}`}>
                                 <p className="text-primary leading-relaxed font-medium" style={{ fontSize: `calc(1.15rem * ${settings.fontScale})` }}>
                                   {v.translations?.KJV || <span className="text-primary/50 italic">Text Unavailable</span>}
                                 </p>
                               </div>
                             )}
-                            {(viewMode === 'parallel' || viewMode === 'single_telugu') && (
+                            {(viewMode === 'parallel' || viewMode === 'single_regional') && (
                               <div className={`transition-none ${viewMode === 'parallel' ? 'lg:col-span-1 border-t-4 border-primary pt-6 lg:border-t-0 lg:border-l-4 lg:pt-0 lg:pl-8' : 'lg:col-span-2'}`}>
                                 <p className="text-primary font-sans font-semibold" style={{ fontSize: `calc(1.4rem * ${settings.fontScale * 0.9})`, lineHeight: 1.8 }}>
-                                  {v.translations?.TELUGU || <span className="text-primary/50 italic">తెలుగు పాఠం అందుబాటులో లేదు</span>}
+                                  {v.translations?.[selectedLanguage] || <span className="text-primary/50 italic">Text Unavailable</span>}
                                 </p>
                               </div>
                             )}

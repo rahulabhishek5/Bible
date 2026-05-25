@@ -1,265 +1,226 @@
 const express = require('express');
 const router = express.Router();
-const fs = require('fs');
 const path = require('path');
-const readline = require('readline');
-const Book = require('../models/Book');
-const Verse = require('../models/Verse');
+const Database = require('better-sqlite3');
 
-// ============================================================
-// COMPLETE 66-BOOK NAVIGATION MANIFEST
-// ============================================================
-const MOCK_BOOKS = [
-  { bookNumber: 1,  name: 'Genesis',          abbreviation: 'Gen', testament: 'Old', totalChapters: 50  },
-  { bookNumber: 2,  name: 'Exodus',           abbreviation: 'Exo', testament: 'Old', totalChapters: 40  },
-  { bookNumber: 3,  name: 'Leviticus',        abbreviation: 'Lev', testament: 'Old', totalChapters: 27  },
-  { bookNumber: 4,  name: 'Numbers',          abbreviation: 'Num', testament: 'Old', totalChapters: 36  },
-  { bookNumber: 5,  name: 'Deuteronomy',      abbreviation: 'Deu', testament: 'Old', totalChapters: 34  },
-  { bookNumber: 6,  name: 'Joshua',           abbreviation: 'Jos', testament: 'Old', totalChapters: 24  },
-  { bookNumber: 7,  name: 'Judges',           abbreviation: 'Jdg', testament: 'Old', totalChapters: 21  },
-  { bookNumber: 8,  name: 'Ruth',             abbreviation: 'Rut', testament: 'Old', totalChapters: 4   },
-  { bookNumber: 9,  name: '1 Samuel',         abbreviation: '1Sa', testament: 'Old', totalChapters: 31  },
-  { bookNumber: 10, name: '2 Samuel',         abbreviation: '2Sa', testament: 'Old', totalChapters: 24  },
-  { bookNumber: 11, name: '1 Kings',          abbreviation: '1Ki', testament: 'Old', totalChapters: 22  },
-  { bookNumber: 12, name: '2 Kings',          abbreviation: '2Ki', testament: 'Old', totalChapters: 25  },
-  { bookNumber: 13, name: '1 Chronicles',     abbreviation: '1Ch', testament: 'Old', totalChapters: 29  },
-  { bookNumber: 14, name: '2 Chronicles',     abbreviation: '2Ch', testament: 'Old', totalChapters: 36  },
-  { bookNumber: 15, name: 'Ezra',             abbreviation: 'Ezr', testament: 'Old', totalChapters: 10  },
-  { bookNumber: 16, name: 'Nehemiah',         abbreviation: 'Neh', testament: 'Old', totalChapters: 13  },
-  { bookNumber: 17, name: 'Esther',           abbreviation: 'Est', testament: 'Old', totalChapters: 10  },
-  { bookNumber: 18, name: 'Job',              abbreviation: 'Job', testament: 'Old', totalChapters: 42  },
-  { bookNumber: 19, name: 'Psalms',           abbreviation: 'Psa', testament: 'Old', totalChapters: 150 },
-  { bookNumber: 20, name: 'Proverbs',         abbreviation: 'Pro', testament: 'Old', totalChapters: 31  },
-  { bookNumber: 21, name: 'Ecclesiastes',     abbreviation: 'Ecc', testament: 'Old', totalChapters: 12  },
-  { bookNumber: 22, name: 'Song of Solomon',  abbreviation: 'Son', testament: 'Old', totalChapters: 8   },
-  { bookNumber: 23, name: 'Isaiah',           abbreviation: 'Isa', testament: 'Old', totalChapters: 66  },
-  { bookNumber: 24, name: 'Jeremiah',         abbreviation: 'Jer', testament: 'Old', totalChapters: 52  },
-  { bookNumber: 25, name: 'Lamentations',     abbreviation: 'Lam', testament: 'Old', totalChapters: 5   },
-  { bookNumber: 26, name: 'Ezekiel',          abbreviation: 'Eze', testament: 'Old', totalChapters: 48  },
-  { bookNumber: 27, name: 'Daniel',           abbreviation: 'Dan', testament: 'Old', totalChapters: 12  },
-  { bookNumber: 28, name: 'Hosea',            abbreviation: 'Hos', testament: 'Old', totalChapters: 14  },
-  { bookNumber: 29, name: 'Joel',             abbreviation: 'Joe', testament: 'Old', totalChapters: 3   },
-  { bookNumber: 30, name: 'Amos',             abbreviation: 'Amo', testament: 'Old', totalChapters: 9   },
-  { bookNumber: 31, name: 'Obadiah',          abbreviation: 'Oba', testament: 'Old', totalChapters: 1   },
-  { bookNumber: 32, name: 'Jonah',            abbreviation: 'Jon', testament: 'Old', totalChapters: 4   },
-  { bookNumber: 33, name: 'Micah',            abbreviation: 'Mic', testament: 'Old', totalChapters: 7   },
-  { bookNumber: 34, name: 'Nahum',            abbreviation: 'Nah', testament: 'Old', totalChapters: 3   },
-  { bookNumber: 35, name: 'Habakkuk',         abbreviation: 'Hab', testament: 'Old', totalChapters: 3   },
-  { bookNumber: 36, name: 'Zephaniah',        abbreviation: 'Zep', testament: 'Old', totalChapters: 3   },
-  { bookNumber: 37, name: 'Haggai',           abbreviation: 'Hag', testament: 'Old', totalChapters: 2   },
-  { bookNumber: 38, name: 'Zechariah',        abbreviation: 'Zec', testament: 'Old', totalChapters: 14  },
-  { bookNumber: 39, name: 'Malachi',          abbreviation: 'Mal', testament: 'Old', totalChapters: 4   },
-  { bookNumber: 40, name: 'Matthew',          abbreviation: 'Mat', testament: 'New', totalChapters: 28  },
-  { bookNumber: 41, name: 'Mark',             abbreviation: 'Mar', testament: 'New', totalChapters: 16  },
-  { bookNumber: 42, name: 'Luke',             abbreviation: 'Luk', testament: 'New', totalChapters: 24  },
-  { bookNumber: 43, name: 'John',             abbreviation: 'Joh', testament: 'New', totalChapters: 21  },
-  { bookNumber: 44, name: 'Acts',             abbreviation: 'Act', testament: 'New', totalChapters: 28  },
-  { bookNumber: 45, name: 'Romans',           abbreviation: 'Rom', testament: 'New', totalChapters: 16  },
-  { bookNumber: 46, name: '1 Corinthians',    abbreviation: '1Co', testament: 'New', totalChapters: 16  },
-  { bookNumber: 47, name: '2 Corinthians',    abbreviation: '2Co', testament: 'New', totalChapters: 13  },
-  { bookNumber: 48, name: 'Galatians',        abbreviation: 'Gal', testament: 'New', totalChapters: 6   },
-  { bookNumber: 49, name: 'Ephesians',        abbreviation: 'Eph', testament: 'New', totalChapters: 6   },
-  { bookNumber: 50, name: 'Philippians',      abbreviation: 'Phi', testament: 'New', totalChapters: 4   },
-  { bookNumber: 51, name: 'Colossians',       abbreviation: 'Col', testament: 'New', totalChapters: 4   },
-  { bookNumber: 52, name: '1 Thessalonians',  abbreviation: '1Th', testament: 'New', totalChapters: 5   },
-  { bookNumber: 53, name: '2 Thessalonians',  abbreviation: '2Th', testament: 'New', totalChapters: 3   },
-  { bookNumber: 54, name: '1 Timothy',        abbreviation: '1Ti', testament: 'New', totalChapters: 6   },
-  { bookNumber: 55, name: '2 Timothy',        abbreviation: '2Ti', testament: 'New', totalChapters: 4   },
-  { bookNumber: 56, name: 'Titus',            abbreviation: 'Tit', testament: 'New', totalChapters: 3   },
-  { bookNumber: 57, name: 'Philemon',         abbreviation: 'Phm', testament: 'New', totalChapters: 1   },
-  { bookNumber: 58, name: 'Hebrews',          abbreviation: 'Heb', testament: 'New', totalChapters: 13  },
-  { bookNumber: 59, name: 'James',            abbreviation: 'Jam', testament: 'New', totalChapters: 5   },
-  { bookNumber: 60, name: '1 Peter',          abbreviation: '1Pe', testament: 'New', totalChapters: 5   },
-  { bookNumber: 61, name: '2 Peter',          abbreviation: '2Pe', testament: 'New', totalChapters: 3   },
-  { bookNumber: 62, name: '1 John',           abbreviation: '1Jo', testament: 'New', totalChapters: 5   },
-  { bookNumber: 63, name: '2 John',           abbreviation: '2Jo', testament: 'New', totalChapters: 1   },
-  { bookNumber: 64, name: '3 John',           abbreviation: '3Jo', testament: 'New', totalChapters: 1   },
-  { bookNumber: 65, name: 'Jude',             abbreviation: 'Jud', testament: 'New', totalChapters: 1   },
-  { bookNumber: 66, name: 'Revelation',       abbreviation: 'Rev', testament: 'New', totalChapters: 22  },
+const DB_PATHS = {
+  KJV: path.join(__dirname, '../../kjv_en.db'),
+  TELUGU: path.join(__dirname, '../../telugu_bsi.db'),
+  HINDI: path.join(__dirname, '../../hindi_bible.db')
+};
+
+const CANONICAL_ENGLISH_BOOKS = [
+  "Genesis", "Exodus", "Leviticus", "Numbers", "Deuteronomy", "Joshua", "Judges", "Ruth",
+  "1 Samuel", "2 Samuel", "1 Kings", "2 Kings", "1 Chronicles", "2 Chronicles", "Ezra",
+  "Nehemiah", "Esther", "Job", "Psalms", "Proverbs", "Ecclesiastes", "Song of Solomon",
+  "Isaiah", "Jeremiah", "Lamentations", "Ezekiel", "Daniel", "Hosea", "Joel", "Amos",
+  "Obadiah", "Jonah", "Micah", "Nahum", "Habakkuk", "Zephaniah", "Haggai", "Zechariah",
+  "Malachi", "Matthew", "Mark", "Luke", "John", "Acts", "Romans", "1 Corinthians",
+  "2 Corinthians", "Galatians", "Ephesians", "Philippians", "Colossians", "1 Thessalonians",
+  "2 Thessalonians", "1 Timothy", "2 Timothy", "Titus", "Philemon", "Hebrews", "James",
+  "1 Peter", "2 Peter", "1 John", "2 John", "3 John", "Jude", "Revelation"
 ];
 
-// ============================================================
-// CSV VERSE STORE
-// Populated at server startup by parseCsvIntoMemory().
-// Key format: "bookNum_chapNum" → sorted array of verse objects.
-// ============================================================
-const verseStore = {};    // { "1_1": [{...}, ...], "1_2": [...], ... }
-const allVerses  = [];    // Flat array used for full-text search
-let   csvReady   = false; // Guard flag — routes wait until CSV is parsed
+const CANONICAL_ENGLISH_ABBR = [
+  "Gen", "Exo", "Lev", "Num", "Deu", "Jos", "Jdg", "Rut", "1Sa", "2Sa", "1Ki", "2Ki", "1Ch", "2Ch", "Ezr", "Neh", "Est", "Job", "Psa", "Pro", "Ecc", "Sng", "Isa", "Jer", "Lam", "Eze", "Dan", "Hos", "Joe", "Amo", "Oba", "Jon", "Mic", "Nah", "Hab", "Zep", "Hag", "Zec", "Mal", "Mat", "Mak", "Luk", "Jhn", "Act", "Rom", "1Co", "2Co", "Gal", "Eph", "Php", "Col", "1Th", "2Th", "1Ti", "2Ti", "Tit", "Phm", "Heb", "Jas", "1Pe", "2Pe", "1Jn", "2Jn", "3Jn", "Jud", "Rev"
+];
+
+const CANONICAL_TELUGU_BOOKS = [
+  "ఆదికాండము", "నిర్గమకాండము", "లేవీయకాండము", "సంఖ్యాకాండము", "ద్వితీయోపదేశకాండము",
+  "యెహోషువ", "న్యాయాధిపతులు", "రూతు", "1 సమూయేలు", "2 సమూయేలు", "1 రాజులు", "2 రాజులు",
+  "1 దినవృత్తాంతములు", "2 దినవృత్తాంతములు", "ఎజ్రా", "నెహెమ్యా", "ఎస్తేరు", "యోబు",
+  "కీర్తనల గ్రంథము", "సామెతలు", "ప్రసంగి", "పరమగీతము", "యెషయా", "యిర్మియా",
+  "విలాపవాక్యములు", "యెహెజ్కేలు", "దానియేలు", "హోషేయ", "యోవేలు", "ఆమోసు", "ఓబద్యా",
+  "యోనా", "మీకా", "నహూము", "హబక్కూకు", "జెఫన్యా", "హగ్గయి", "జెకర్యా", "మలాకీ",
+  "మత్తయి", "మార్కు", "లూకా", "యోహాను", "అపొస్తలుల కార్యములు", "రోమీయులకు",
+  "1 కొరింథీయులకు", "2 కొరింథీయులకు", "గలతీయులకు", "ఎఫెసీయులకు", "ఫిలిప్పీయులకు",
+  "కొలొస్సయులకు", "1 థెస్సలొనీకయులకు", "2 థెస్సలొనీకయులకు", "1 తిమోతికి", "2 తిమోతికి",
+  "తీతుకు", "ఫిలేమోనుకు", "హెబ్రీయులకు", "యాకోబు", "1 పేతురు", "2 పేతురు", "1 యోహాను",
+  "2 యోహాను", "3 యోహాను", "యూదా", "ప్రకటన గ్రంథము"
+];
+
+const CANONICAL_HINDI_BOOKS = [
+  "उत्पत्ति", "निर्गमन", "लैव्यव्यवस्था", "गिनती", "व्यवस्थाविवरण",
+  "यहोशू", "न्यायियों", "रूत", "1 शमूएल", "2 शमूएल", "1 राजा", "2 राजा",
+  "1 इतिहास", "2 इतिहास", "एज्रा", "नहेमायाह", "एस्तेर", "अय्यूब",
+  "भजन संहिता", "नीतिवचन", "सभोपदेशक", "श्रेष्ठगीत", "यशायाह", "यिर्मयाह",
+  "विलापगीत", "यहेजकेल", "दानिय्येल", "होशे", "योएल", "आमोस", "ओबद्याह",
+  "योना", "मीका", "नहूम", "हबक्कूक", "सपन्याह", "हाग्गै", "जकर्याह", "मलाकी",
+  "मत्ती", "मरकुस", "लूका", "यूहन्ना", "प्रेरितों के काम", "रोमियों",
+  "1 कुरिन्थियों", "2 कुरिन्थियों", "गलातियों", "इफिसियों", "फिलिप्पियों",
+  "कुलुस्सियों", "1 थिस्सलुनीकियों", "2 थिस्सलुनीकियों", "1 तीमुथियुस", "2 तीमुथियुस",
+  "तीतुस", "फिलेमोन", "इब्रानियों", "याकूब", "1 पतरस", "2 पतरस", "1 यूहन्ना",
+  "2 यूहन्ना", "3 यूहन्ना", "यहूदा", "प्रकाशितवाक्य"
+];
+
+const dbs = {};
+const schemaInfo = {}; // { KJV: { bookCol, chapCol, verseCol, textCol }, ... }
+const bookMaps = {}; // { KJV: { 1: 'Gen', 2: 'Exo' }, HINDI: { 1: 'उत्पत्ति' } }
+const navigationCaches = {}; // { KJV: [...], HINDI: [...] }
 
 // ============================================================
-// PARSER: Stream-reads verse.csv at startup using only readline.
-// CSV columns: id, t (Telugu text), b (book), c (chapter), v (verse)
+// INITIALIZATION: ZERO-RAM PERSISTENT SQLITE CONNECTIONS
 // ============================================================
-const CSV_TELUGU = path.join(__dirname, '../../verse.csv');
-const CSV_KJV = path.join(__dirname, '../../kjv_en.csv');
-
-function loadCsvFile(filePath, languageKey) {
-  return new Promise((resolve) => {
-    if (!fs.existsSync(filePath)) {
-      console.warn(`⚠️  [CSV Loader]: ${filePath} not found. ${languageKey} text will be unavailable.`);
-      return resolve();
-    }
-
-    const rl = readline.createInterface({
-      input: fs.createReadStream(filePath, { encoding: 'utf8' }),
-      crlfDelay: Infinity,
-    });
-
-    let isFirstLine = true;
-    let count = 0;
-
-    rl.on('line', (rawLine) => {
-      // Skip header row
-      if (isFirstLine) { isFirstLine = false; return; }
-
-      const line = rawLine.trim();
-      if (!line) return;
-
-      // Handle quoted fields: split on commas but respect CSV quoting
-      const firstComma = line.indexOf(',');
-      const lastComma  = line.lastIndexOf(',');
-      const secondLastComma = line.lastIndexOf(',', lastComma - 1);
-      const thirdLastComma  = line.lastIndexOf(',', secondLastComma - 1);
-
-      const id      = line.substring(0, firstComma).trim();
-      const rawText = line.substring(firstComma + 1, thirdLastComma).trim();
-      const b       = parseInt(line.substring(thirdLastComma + 1, secondLastComma).trim(), 10);
-      const c       = parseInt(line.substring(secondLastComma + 1, lastComma).trim(), 10);
-      const v       = parseInt(line.substring(lastComma + 1).trim(), 10);
-
-      if (isNaN(b) || isNaN(c) || isNaN(v)) return;
-
-      // Strip surrounding quotes if present
-      const text = rawText.startsWith('"') && rawText.endsWith('"')
-        ? rawText.slice(1, -1).replace(/""/g, '"')
-        : rawText;
-
-      const key = `${b}_${c}`;
-      if (!verseStore[key]) verseStore[key] = [];
-
-      // Find existing verse or create new one
-      let verse = verseStore[key].find(vObj => vObj.verseNumber === v);
-      if (!verse) {
-        verse = {
-          _id:           `csv_${b}_${c}_${v}`, // unique semantic id
-          bookNumber:    b,
-          chapterNumber: c,
-          verseNumber:   v,
-          translations:  {}
-        };
-        verseStore[key].push(verse);
-        allVerses.push(verse);
+function initDatabases() {
+  for (const [lang, dbPath] of Object.entries(DB_PATHS)) {
+    try {
+      dbs[lang] = new Database(dbPath, { readonly: true });
+      
+      // Dynamic Schema Introspection (PRAGMA table_info)
+      const columns = dbs[lang].pragma("table_info('verses')");
+      const colNames = columns.map(c => c.name.toLowerCase());
+      
+      let bookCol = colNames.includes('book') ? 'Book' : (colNames.includes('b') ? 'b' : null);
+      let chapCol = colNames.includes('chapter') ? 'Chapter' : (colNames.includes('c') ? 'c' : null);
+      let verseCol = colNames.includes('verse') ? 'Verse' : (colNames.includes('v') ? 'v' : null);
+      let textCol = colNames.includes('text') ? 'Text' : (colNames.includes('t') ? 't' : null);
+      
+      if (!bookCol) {
+        bookCol = columns.find(c => c.name.toLowerCase() === 'book' || c.name.toLowerCase() === 'b')?.name || 'b';
+        chapCol = columns.find(c => c.name.toLowerCase() === 'chapter' || c.name.toLowerCase() === 'c')?.name || 'c';
+        verseCol = columns.find(c => c.name.toLowerCase() === 'verse' || c.name.toLowerCase() === 'v')?.name || 'v';
+        textCol = columns.find(c => c.name.toLowerCase() === 'text' || c.name.toLowerCase() === 't')?.name || 't';
       }
 
-      // Merge translation text
-      verse.translations[languageKey] = text;
-      count++;
-    });
-
-    rl.on('close', () => {
-      console.log(`✅ [CSV Loader]: Indexed ${count.toLocaleString()} ${languageKey} verses.`);
-      resolve();
-    });
-
-    rl.on('error', (err) => {
-      console.error(`❌ [CSV Loader]: Failed to read ${filePath}:`, err.message);
-      resolve();
-    });
-  });
-}
-
-async function parseAllCsvIntoMemory() {
-  await loadCsvFile(CSV_TELUGU, 'TELUGU');
-  await loadCsvFile(CSV_KJV, 'KJV');
-  
-  // Sort each chapter's verses by verseNumber after all files are merged
-  for (const key of Object.keys(verseStore)) {
-    verseStore[key].sort((a, b) => a.verseNumber - b.verseNumber);
+      schemaInfo[lang] = { bookCol, chapCol, verseCol, textCol };
+      
+      // Dynamic Navigation Builder: Query distinct books preserving native row order
+      const bookRows = dbs[lang].prepare(`SELECT ${bookCol} AS bName, MAX(${chapCol}) AS totalChapters FROM verses GROUP BY ${bookCol} ORDER BY MIN(rowid)`).all();
+      
+      bookMaps[lang] = {};
+      const navData = [];
+      
+      bookRows.forEach((row, idx) => {
+        const bookNumber = idx + 1;
+        bookMaps[lang][bookNumber] = row.bName; // Map integer to structural string (e.g. 1 -> 'Gen' or 'उत्పत्ति')
+        
+        let displayName = String(row.bName);
+        let displayAbbr = String(row.bName).substring(0, 4).trim();
+        
+        if (lang === 'KJV' && CANONICAL_ENGLISH_BOOKS[idx]) {
+          displayName = CANONICAL_ENGLISH_BOOKS[idx];
+          displayAbbr = CANONICAL_ENGLISH_ABBR[idx] || displayName.substring(0, 4).trim();
+        } else if (lang === 'TELUGU' && CANONICAL_TELUGU_BOOKS[idx]) {
+          displayName = CANONICAL_TELUGU_BOOKS[idx];
+          displayAbbr = CANONICAL_TELUGU_BOOKS[idx].substring(0, 4).trim();
+        } else if (lang === 'HINDI' && CANONICAL_HINDI_BOOKS[idx]) {
+          displayName = CANONICAL_HINDI_BOOKS[idx];
+          displayAbbr = CANONICAL_HINDI_BOOKS[idx].substring(0, 4).trim();
+        }
+        
+        navData.push({
+          bookNumber,
+          name: displayName,
+          abbreviation: displayAbbr,
+          testament: bookNumber <= 39 ? 'Old' : 'New',
+          totalChapters: parseInt(row.totalChapters, 10)
+        });
+      });
+      
+      navigationCaches[lang] = navData;
+      console.log(`✅ [SQLite Engine]: ${lang} connected and mapped ${bookRows.length} books.`);
+    } catch (err) {
+      console.error(`❌ [SQLite Engine]: Failed to load ${lang} db:`, err.message);
+    }
   }
-  
-  csvReady = true;
-  console.log(`✅ [CSV Loader]: Complete. Ready for queries.`);
 }
 
-// Trigger CSV parse immediately when this module is first loaded
-parseAllCsvIntoMemory();
-
-// ============================================================
-// HELPERS
-// ============================================================
-const isMockMode = () => process.env.DB_MODE === 'MOCK';
-
-// Navigation cache (LIVE mode only)
-let navigationCache = null;
+initDatabases();
 
 // ============================================================
 // ROUTE 1: GET /api/bible/navigation-menu
 // ============================================================
-router.get('/navigation-menu', async (req, res) => {
-  try {
-    if (isMockMode()) {
-      return res.status(200).json({
-        status: 'success',
-        mode:   'MOCK',
-        totalBooks: MOCK_BOOKS.length,
-        data:   MOCK_BOOKS,
-      });
-    }
+router.get('/navigation-menu', (req, res) => {
+  let lang = (req.query.lang || 'ENGLISH').toUpperCase();
+  if (lang === 'ENGLISH') lang = 'KJV';
 
-    if (navigationCache) return res.status(200).json(navigationCache);
-
-    const books = await Book.find({}, { _id: 0, __v: 0 }).sort({ bookNumber: 1 }).lean();
-    navigationCache = { status: 'success', mode: 'LIVE', totalBooks: books.length, data: books };
-    return res.status(200).json(navigationCache);
-  } catch (error) {
-    console.error('Navigation Menu Error:', error);
-    res.status(500).json({ status: 'error', message: 'Failed to load navigation data' });
+  const targetLang = navigationCaches[lang] ? lang : 'KJV';
+  
+  if (!navigationCaches[targetLang]) {
+    return res.status(500).json({ status: 'error', message: 'Navigation cache unavailable' });
   }
+
+  res.status(200).json({
+    status: 'success',
+    mode: 'SQLite',
+    totalBooks: navigationCaches[targetLang].length,
+    data: navigationCaches[targetLang]
+  });
 });
 
 // ============================================================
 // ROUTE 2: GET /api/bible/search?q=query&translation=TELUGU
 // ============================================================
-router.get('/search', async (req, res) => {
-  const { q, translation } = req.query;
+router.get('/search', (req, res) => {
+  const q = req.query.q;
+  let translation = (req.query.translation || 'KJV').toUpperCase();
+  if (translation === 'ENGLISH') translation = 'KJV';
 
   if (!q) {
     return res.status(400).json({ status: 'error', message: 'Query parameter "q" is required' });
   }
 
+  const targetLang = dbs[translation] ? translation : 'KJV';
+  const db = dbs[targetLang];
+  const schema = schemaInfo[targetLang];
+
+  if (!db || !schema) {
+     return res.status(500).json({ status: 'error', message: 'Database not loaded' });
+  }
+
   try {
-    if (isMockMode()) {
-      const queryLower = q.toLowerCase();
+    const stmt = db.prepare(`SELECT * FROM verses WHERE ${schema.textCol} LIKE ? LIMIT 50`);
+    const rows = stmt.all(`%${q}%`);
+    
+    const reverseBookMap = {};
+    for (const [k, v] of Object.entries(bookMaps[targetLang])) {
+       reverseBookMap[v] = parseInt(k, 10);
+    }
 
-      const filtered = allVerses.filter((verse) => {
-        const teluguText = (verse.translations.TELUGU || '').toLowerCase();
-        const kjvText    = (verse.translations.KJV    || '').toLowerCase();
+    const zippedResults = [];
+    
+    for (const row of rows) {
+      const bName = row[schema.bookCol];
+      const bInt = reverseBookMap[bName] || 1;
+      const cInt = parseInt(row[schema.chapCol], 10);
+      const vInt = parseInt(row[schema.verseCol], 10);
 
-        if (translation === 'TELUGU') return teluguText.includes(queryLower);
-        if (translation === 'KJV')    return kjvText.includes(queryLower);
-        return teluguText.includes(queryLower) || kjvText.includes(queryLower);
-      });
+      const zippedTrans = {
+         KJV: 'Text Unavailable',
+         TELUGU: 'Text Unavailable',
+         HINDI: 'Text Unavailable'
+      };
+      
+      // Parallel DB Coordinate Zipping
+      for (const [lKey, lDb] of Object.entries(dbs)) {
+         const lSchema = schemaInfo[lKey];
+         const lInternalBook = bookMaps[lKey][bInt];
+         if (!lSchema || !lInternalBook) continue;
 
-      return res.status(200).json({
-        status:  'success',
-        mode:    'MOCK',
-        results: filtered.length,
-        data:    filtered.slice(0, 50),
+         try {
+           const vStmt = lDb.prepare(`SELECT ${lSchema.textCol} AS t FROM verses WHERE ${lSchema.bookCol} = ? AND ${lSchema.chapCol} = ? AND ${lSchema.verseCol} = ?`);
+           const vRow = vStmt.get(lInternalBook, cInt, vInt);
+           if (vRow) zippedTrans[lKey] = vRow.t;
+         } catch(e) {}
+      }
+
+      zippedResults.push({
+         _id: `sqlite_${bInt}_${cInt}_${vInt}`,
+         bookNumber: bInt,
+         chapterNumber: cInt,
+         verseNumber: vInt,
+         translations: zippedTrans
       });
     }
 
-    let query = {};
-    if (translation) {
-      query[`translations.${translation}`] = { $regex: q, $options: 'i' };
-    } else {
-      query = { $text: { $search: q } };
-    }
-
-    const verses = await Verse.find(query).limit(50).lean();
-    return res.status(200).json({ status: 'success', mode: 'LIVE', results: verses.length, data: verses });
-  } catch (error) {
-    console.error('Search Route Error:', error);
+    res.status(200).json({
+      status: 'success',
+      mode: 'SQLite',
+      results: zippedResults.length,
+      data: zippedResults
+    });
+  } catch(e) {
+    console.error('Search Route Error:', e);
     res.status(500).json({ status: 'error', message: 'Failed to perform search query' });
   }
 });
@@ -267,32 +228,90 @@ router.get('/search', async (req, res) => {
 // ============================================================
 // ROUTE 3: GET /api/bible/chapter/:bookNumber/:chapterNumber
 // ============================================================
-router.get('/chapter/:bookNumber/:chapterNumber', async (req, res) => {
-  const bookNum = Number(req.params.bookNumber);
-  const chapNum = Number(req.params.chapterNumber);
+router.get('/chapter/:bookNumber/:chapterNumber', (req, res) => {
+  const b = parseInt(req.params.bookNumber, 10);
+  const c = parseInt(req.params.chapterNumber, 10);
 
-  try {
-    if (isMockMode()) {
-      const key    = `${bookNum}_${chapNum}`;
-      const verses = verseStore[key] || [];
+  const translationsMap = {}; 
+  let maxVerse = 0;
 
-      return res.status(200).json({
-        status:  'success',
-        mode:    'MOCK',
-        results: verses.length,
-        data:    verses,
+  for (const [langKey, db] of Object.entries(dbs)) {
+    const schema = schemaInfo[langKey];
+    const internalBookName = bookMaps[langKey][b];
+    
+    if (!internalBookName || !schema) continue;
+
+    try {
+      const stmt = db.prepare(`SELECT ${schema.verseCol} AS v, ${schema.textCol} AS t FROM verses WHERE ${schema.bookCol} = ? AND ${schema.chapCol} = ?`);
+      const rows = stmt.all(internalBookName, c);
+      
+      // Hindi Blob Regex Parsing
+      if (langKey === 'HINDI') {
+        const parsedRows = [];
+        rows.forEach(row => {
+           let cleanText = row.t || "";
+           if (cleanText.includes(': HINOVBSI')) {
+             cleanText = cleanText.split(': HINOVBSI')[0].trim();
+           }
+           const parts = cleanText ? cleanText.split(/(\d+)\s+/) : [];
+           if (parts.length > 1) {
+               let currentVerse = row.v;
+               let currentText = "";
+               for (let i = 0; i < parts.length; i++) {
+                   if (parts[i].match(/^\d+$/) && parseInt(parts[i], 10) < 200) {
+                       if (currentText.trim().length > 0) {
+                           parsedRows.push({ v: currentVerse, t: currentText.trim() });
+                           currentText = "";
+                       }
+                       currentVerse = parseInt(parts[i], 10);
+                   } else {
+                       currentText += parts[i] + " ";
+                   }
+               }
+               if (currentText.trim().length > 0) {
+                   parsedRows.push({ v: currentVerse, t: currentText.trim() });
+               }
+           } else {
+               parsedRows.push(row);
+           }
+        });
+        rows.length = 0;
+        parsedRows.forEach(r => rows.push(r));
+      }
+
+      rows.forEach(row => {
+        const v = parseInt(row.v, 10);
+        if (!translationsMap[v]) translationsMap[v] = {};
+        translationsMap[v][langKey] = row.t;
+        if (v > maxVerse) maxVerse = v;
       });
+    } catch(e) {
+      console.error(`Error querying ${langKey}:`, e.message);
     }
-
-    const verses = await Verse.find({ bookNumber: bookNum, chapterNumber: chapNum })
-      .sort({ verseNumber: 1 })
-      .lean();
-
-    return res.status(200).json({ status: 'success', mode: 'LIVE', results: verses.length, data: verses });
-  } catch (error) {
-    console.error('Chapter Fetch Error:', error);
-    res.status(500).json({ status: 'error', message: 'Failed to retrieve chapter data' });
   }
+
+  const resultData = [];
+  for (let v = 1; v <= maxVerse; v++) {
+    const tr = translationsMap[v] || {};
+    resultData.push({
+      _id: `sqlite_${b}_${c}_${v}`,
+      bookNumber: b,
+      chapterNumber: c,
+      verseNumber: v,
+      translations: {
+        KJV: tr.KJV || 'Text Unavailable',
+        TELUGU: tr.TELUGU || 'Text Unavailable',
+        HINDI: tr.HINDI || 'पाठ उपलब्ध नहीं है (Text Unavailable)'
+      }
+    });
+  }
+
+  res.status(200).json({
+    status: 'success',
+    mode: 'SQLite',
+    results: resultData.length,
+    data: resultData
+  });
 });
 
 module.exports = router;

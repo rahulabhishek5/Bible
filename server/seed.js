@@ -102,59 +102,29 @@ async function seedDatabase() {
     console.log('📖 Starting Verse / Translation Seeding Phase (Telugu Edition)...');
 
     const translationToLoad = 'TELUGU'; 
-    const csvFilePath = path.join(__dirname, '../verse.csv');
+    const dbFilePath = path.join(__dirname, '../../telugu_bsi.db');
 
-    if (!fs.existsSync(csvFilePath)) {
-       console.error(`❌ File not found at ${csvFilePath}`);
+    if (!fs.existsSync(dbFilePath)) {
+       console.error(`❌ File not found at ${dbFilePath}`);
        process.exit(1);
     }
 
-    console.log(`⏳ Loading and parsing CSV data natively from ${csvFilePath} into memory...`);
-    const versesData = [];
+    console.log(`⏳ Loading data from SQLite database natively from ${dbFilePath} into memory...`);
     
-    const fileStream = fs.createReadStream(csvFilePath);
-    const rl = readline.createInterface({
-      input: fileStream,
-      crlfDelay: Infinity
-    });
+    // Using better-sqlite3 to extract data since CSVs are deleted
+    const Database = require('better-sqlite3');
+    const db = new Database(dbFilePath, { readonly: true });
+    
+    const rows = db.prepare('SELECT * FROM verses').all();
+    const versesData = rows.map(row => ({
+      b: parseInt(row.b || row.Book, 10),
+      c: parseInt(row.c || row.Chapter, 10),
+      v: parseInt(row.v || row.Verse, 10),
+      t: row.t || row.Text
+    }));
+    db.close();
 
-    let isFirstLine = true;
-
-    for await (const line of rl) {
-      if (isFirstLine) {
-        isFirstLine = false;
-        continue; // Skip header: id,t,b,c,v
-      }
-      
-      // The CSV format is strictly: id, "text...", book, chapter, verse
-      // We parse backwards by finding the last 3 commas to extract b,c,v perfectly even if text contains commas
-      const firstComma = line.indexOf(',');
-      const lastComma = line.lastIndexOf(',');
-      const secondLastComma = line.lastIndexOf(',', lastComma - 1);
-      const thirdLastComma = line.lastIndexOf(',', secondLastComma - 1);
-
-      if (firstComma === -1 || thirdLastComma === -1) continue;
-
-      const bStr = line.substring(thirdLastComma + 1, secondLastComma);
-      const cStr = line.substring(secondLastComma + 1, lastComma);
-      const vStr = line.substring(lastComma + 1);
-      
-      let rawText = line.substring(firstComma + 1, thirdLastComma);
-      
-      // Strip outer quotes from the text if they exist
-      if (rawText.startsWith('"') && rawText.endsWith('"')) {
-        rawText = rawText.substring(1, rawText.length - 1);
-      }
-
-      versesData.push({
-        b: parseInt(bStr, 10),
-        c: parseInt(cStr, 10),
-        v: parseInt(vStr, 10),
-        t: rawText
-      });
-    }
-
-    console.log(`✅ Native CSV parsing complete. Found ${versesData.length} rows. Executing batch upserts...`);
+    console.log(`✅ Native SQLite extraction complete. Found ${versesData.length} rows. Executing batch upserts...`);
 
     const BATCH_SIZE = 1000;
     let bulkOps = [];

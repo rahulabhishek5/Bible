@@ -11,18 +11,19 @@ const PORT = process.env.PORT || 5000;
 // 1. MIDDLEWARE
 // ==========================================
 const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:5174',
-  process.env.FRONTEND_URL
-].filter(Boolean);
+  'http://localhost:5173', // Local Development Port
+  process.env.FRONTEND_URL  // Production Vercel Domain Key
+];
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
     }
+    return callback(null, true);
   },
   credentials: true
 }));
