@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useLayoutEffect } from 'react';
 import { BookOpen, Search, Menu, ChevronRight, BookOpenCheck, Globe, HelpCircle, Settings, X, Type, ChevronDown } from 'lucide-react';
 
-const API_BASE = 'http://localhost:5000/api/bible';
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000/api/bible';
 
 const TELUGU_BOOK_NAMES = {
   1: 'ఆదికాండము', 2: 'నిర్గమకాండము', 3: 'లేవీయకాండము', 4: 'సంఖ్యాకాండము', 5: 'ద్వితీయోపదేశకాండము',
