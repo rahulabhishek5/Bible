@@ -1,0 +1,30 @@
+# Global OS & Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.suo
+*.sln
+*.sw?
+
+# Node modules
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment Variables (CRITICAL: Do not upload API keys or secrets!)
+.env
+server/.env
+client/.env
+client/.env.local
+
+# Build output
+client/dist/
+
+# NOTE: The /server/data/ folder contains the verse.csv and kjv_en.db
+# We DO NOT ignore them here because they are small enough (< 15MB) 
+# and are required for the Mock Mode API to function when cloned.
