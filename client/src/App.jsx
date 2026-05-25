@@ -243,13 +243,13 @@ export default function App() {
       {/* MOBILE BACKDROP OVERLAY */}
       {sidebarOpen && (
         <div 
-          className="fixed inset-0 bg-primary/80 z-40 md:hidden transition-opacity" 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[90] md:hidden transition-opacity duration-300 ease-in-out" 
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* SIDEBAR NAVIGATION PANEL */}
-      <aside className={`fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 w-80 h-full bg-cream border-r-4 border-primary flex flex-col overflow-hidden`}>
+      <aside className={`fixed inset-y-0 left-0 z-[100] transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 w-80 h-full bg-cream border-r-4 border-primary flex flex-col overflow-hidden`}>
         <div className="p-5 border-b-4 border-primary flex items-center gap-3 bg-primary text-surface-white shrink-0">
           <BookOpenCheck className="h-7 w-7 shrink-0" />
           <h1 className="font-bold text-xl tracking-wide whitespace-nowrap uppercase">Multi-Lingual Bible</h1>
@@ -353,7 +353,7 @@ export default function App() {
                       <ChevronDown className={`w-5 h-5 text-primary transition-transform duration-300 ${isViewModeDropdownOpen ? 'rotate-180' : ''}`} />
                     </button>
                     
-                    <div className={`absolute top-full left-0 right-0 mt-2 bg-surface-white border-2 border-primary shadow-[6px_6px_0px_0px_#1A1A1A] flex flex-col overflow-hidden transition-all duration-300 origin-top z-[99] ${isViewModeDropdownOpen ? 'scale-y-100 opacity-100 visible' : 'scale-y-0 opacity-0 invisible'}`}>
+                    <div className={`absolute top-full left-0 right-0 mt-2 bg-surface-white border-2 border-primary shadow-[6px_6px_0px_0px_#1A1A1A] flex flex-col overflow-hidden transition-all duration-300 origin-top z-60 ${isViewModeDropdownOpen ? 'scale-y-100 opacity-100 visible' : 'scale-y-0 opacity-0 invisible'}`}>
                       {['parallel', 'single_english', 'single_regional'].map(mode => (
                         <button 
                           key={mode}
@@ -380,7 +380,7 @@ export default function App() {
                   </button>
                   
                   {isLangDropdownOpen && (
-                    <div className="absolute top-full mt-2 right-0 w-36 bg-surface-white border-2 border-primary shadow-[4px_4px_0px_0px_#1A1A1A] flex flex-col z-[99]">
+                    <div className="absolute top-full mt-2 right-0 w-36 bg-surface-white border-2 border-primary shadow-[4px_4px_0px_0px_#1A1A1A] flex flex-col z-60">
                       {['TELUGU', 'HINDI'].map(lang => (
                       <button
                         key={lang}
