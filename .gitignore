@@ -32,3 +32,8 @@ client/dist/
 # SQLite Temp Files
 *.db-journal
 *.db-wal
+
+# AI / Dev Tooling (local only — do not upload)
+.agents/
+graphify-out/
+debug_verses.js

@@ -246,6 +246,10 @@ router.get('/chapter/:bookNumber/:chapterNumber', (req, res) => {
       const rows = stmt.all(internalBookName, c);
       
       // Hindi Blob Regex Parsing
+      // NOTE: Hindi DB stores multiple verses concatenated in a single row.
+      // We split on standalone verse numbers (1–3 digits) that appear at a
+      // token boundary — NOT on numbers embedded inside scripture text
+      // (e.g. "100 cubits" must NOT be treated as verse 100).
       if (langKey === 'HINDI') {
         const parsedRows = [];
         rows.forEach(row => {
@@ -253,12 +257,14 @@ router.get('/chapter/:bookNumber/:chapterNumber', (req, res) => {
            if (cleanText.includes(': HINOVBSI')) {
              cleanText = cleanText.split(': HINOVBSI')[0].trim();
            }
-           const parts = cleanText ? cleanText.split(/(\d+)\s+/) : [];
+           // Only split on 1-3 digit numbers that are NOT preceded by another
+           // digit or letter (i.e. genuine verse markers, not numbers in text).
+           const parts = cleanText ? cleanText.split(/(?<![\d\w])(\d{1,3})(?=\s)/) : [];
            if (parts.length > 1) {
                let currentVerse = row.v;
                let currentText = "";
                for (let i = 0; i < parts.length; i++) {
-                   if (parts[i].match(/^\d+$/) && parseInt(parts[i], 10) < 200) {
+                   if (parts[i].match(/^\d{1,3}$/) && parseInt(parts[i], 10) >= 1 && parseInt(parts[i], 10) <= 176) {
                        if (currentText.trim().length > 0) {
                            parsedRows.push({ v: currentVerse, t: currentText.trim() });
                            currentText = "";
@@ -283,7 +289,11 @@ router.get('/chapter/:bookNumber/:chapterNumber', (req, res) => {
         const v = parseInt(row.v, 10);
         if (!translationsMap[v]) translationsMap[v] = {};
         translationsMap[v][langKey] = row.t;
-        if (v > maxVerse) maxVerse = v;
+        // Only let KJV and TELUGU set maxVerse — they store one verse per row
+        // so their verse numbers are authoritative. Hindi blob-parsing can
+        // produce spurious high verse numbers that would add phantom
+        // "Text Unavailable" entries at the end of every chapter.
+        if (langKey !== 'HINDI' && v > maxVerse) maxVerse = v;
       });
     } catch(e) {
       console.error(`Error querying ${langKey}:`, e.message);
